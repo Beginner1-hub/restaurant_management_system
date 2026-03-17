@@ -17,13 +17,10 @@ if(isset($_POST['login'])){
     if($result->num_rows === 1){
         $user = $result->fetch_assoc();
 
-        // Check password (hashed for admin, md5 for others based on your DB)
-        if(password_verify($password, $user['password']) || 
-           md5($password) === $user['password']){
+        if(password_verify($password, $user['password']) || md5($password) === $user['password']){
 
             $_SESSION['user'] = $user;
 
-            // Redirect by role
             switch($user['role']){
                 case 'admin':
                     header("Location: ../admin/dashboard.php");
@@ -39,9 +36,11 @@ if(isset($_POST['login'])){
                     break;
             }
             exit();
-        } else {
+        } 
+        else{
             $error = "Invalid password";
         }
+
     } else {
         $error = "User not found";
     }
@@ -49,21 +48,111 @@ if(isset($_POST['login'])){
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <title>Login</title>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Restaurant Login</title>
+
+<link rel="stylesheet" href="../css/style.css">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<script>
+
+function togglePassword(){
+
+let pass=document.getElementById("password");
+
+if(pass.type==="password"){
+pass.type="text";
+}else{
+pass.type="password";
+}
+
+}
+
+</script>
+
 </head>
-<body>
 
-<h2>Restaurant Management Login</h2>
+<body class="login-page">
 
-<?php if($error) echo "<p style='color:red;'>$error</p>"; ?>
+<div class="login-container">
+
+
+<div class="login-card">
+
+<div class="login-logo">
+
+<div class="steam"></div>
+
+<i class="fa-solid fa-utensils"></i>
+
+<h2>Restaurant System</h2>
+
+</div>
+
+
+<?php if($error): ?>
+
+<div class="login-error">
+
+<i class="fa-solid fa-circle-exclamation"></i>
+
+<?php echo $error; ?>
+
+</div>
+
+<?php endif; ?>
+
 
 <form method="POST">
-    Username: <input type="text" name="username" required><br><br>
-    Password: <input type="password" name="password" required><br><br>
-    <button type="submit" name="login">Login</button>
+
+<div class="input-group">
+
+<i class="fa-solid fa-user"></i>
+
+<input type="text" name="username" placeholder="Username" required>
+
+</div>
+
+
+<div class="input-group">
+
+<i class="fa-solid fa-lock"></i>
+
+<input type="password" id="password" name="password" placeholder="Password" required>
+
+<span onclick="togglePassword()">
+
+<i class="fa-solid fa-eye"></i>
+
+</span>
+
+</div>
+
+
+<button class="login-submit" type="submit" name="login">
+Login
+</button>
+
 </form>
+
+
+<a href="/restaurant_management_system/index.php" class="back-home">
+<i class="fa-solid fa-arrow-left"></i> Back to Home
+</a>
+
+
+</div>
+
+</div>
 
 </body>
 </html>

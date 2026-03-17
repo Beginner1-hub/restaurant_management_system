@@ -1,0 +1,841 @@
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:'Poppins',sans-serif;
+}
+
+
+
+/* =========================
+BACKGROUND
+========================= */
+
+body{
+
+color:#f5f5f5;
+
+background:
+linear-gradient(rgba(0,0,0,0.35),rgba(0,0,0,0.45)),
+url("../images/hm.jpg");
+
+background-size:cover;
+background-position:center;
+background-attachment:fixed;
+
+}
+
+
+
+/* =========================
+PARTICLES
+========================= */
+
+.particles::before,
+.particles::after{
+
+content:"";
+
+position:fixed;
+
+width:3px;
+height:3px;
+
+background:white;
+
+border-radius:50%;
+
+box-shadow:
+100px 200px white,
+400px 300px white,
+700px 500px white,
+900px 200px white,
+1200px 400px white;
+
+animation:particles 18s linear infinite;
+
+opacity:0.35;
+
+}
+
+@keyframes particles{
+
+0%{transform:translateY(0);}
+100%{transform:translateY(-1000px);}
+
+}
+
+
+
+/* =========================
+NAVBAR
+========================= */
+
+.navbar{
+
+display:flex;
+justify-content:space-between;
+align-items:center;
+
+padding:20px 70px;
+
+background:rgba(0,0,0,0.45);
+
+backdrop-filter:blur(12px);
+
+}
+
+.logo{
+
+font-size:22px;
+font-weight:600;
+
+color:#f4b400;
+
+display:flex;
+align-items:center;
+gap:10px;
+
+position:relative;
+
+}
+
+
+
+/* =========================
+STEAM ANIMATION
+========================= */
+
+.steam{
+
+position:absolute;
+
+width:6px;
+height:6px;
+
+background:white;
+
+border-radius:50%;
+
+top:-10px;
+left:16px;
+
+opacity:0.6;
+
+animation:steam 3s infinite;
+
+}
+
+@keyframes steam{
+
+0%{
+transform:translateY(0);
+opacity:0;
+}
+
+50%{
+opacity:0.6;
+}
+
+100%{
+transform:translateY(-20px);
+opacity:0;
+}
+
+}
+
+
+
+/* =========================
+LOGIN BUTTON
+========================= */
+
+.login-btn{
+
+background:#f4b400;
+
+padding:8px 22px;
+
+border:none;
+
+border-radius:25px;
+
+font-weight:600;
+
+cursor:pointer;
+
+color:black;
+
+transition:0.3s;
+
+}
+
+.login-btn:hover{
+
+background:#ffcc33;
+
+transform:scale(1.05);
+
+}
+
+
+
+/* =========================
+HERO SECTION
+========================= */
+
+.hero{
+
+display:flex;
+
+justify-content:space-between;
+
+align-items:center;
+
+padding:80px;
+
+min-height:75vh;
+
+}
+
+
+
+.hero-left{
+
+max-width:520px;
+
+}
+
+
+
+.hero-left h1{
+
+font-size:42px;
+
+margin-bottom:18px;
+
+color:#f4b400;
+
+}
+
+
+
+.hero-left p{
+
+font-size:16px;
+
+line-height:1.6;
+
+margin-bottom:35px;
+
+color:#e5e5e5;
+
+}
+
+
+
+/* =========================
+ROLE BUTTONS
+========================= */
+
+.role-buttons{
+
+display:grid;
+
+grid-template-columns:repeat(2,1fr);
+
+gap:15px;
+
+}
+
+
+
+.role-buttons button{
+
+padding:12px;
+
+border:none;
+
+border-radius:10px;
+
+background:#f4b400;
+
+color:black;
+
+font-size:14px;
+
+font-weight:600;
+
+cursor:pointer;
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+gap:8px;
+
+transition:0.3s;
+
+}
+
+
+
+.role-buttons button:hover{
+
+background:#ffcc33;
+
+transform:translateY(-3px);
+
+box-shadow:0 10px 20px rgba(0,0,0,0.4);
+
+}
+
+
+
+/* =========================
+DASHBOARD PREVIEW
+========================= */
+
+.hero-right{
+
+display:flex;
+align-items:center;
+
+}
+
+
+
+.dashboard{
+
+display:flex;
+
+gap:20px;
+
+transform:rotateY(-10deg);
+
+}
+
+
+
+.card{
+
+background:rgba(20,20,20,0.75);
+
+padding:22px;
+
+border-radius:12px;
+
+backdrop-filter:blur(10px);
+
+width:170px;
+
+text-align:center;
+
+animation:float 5s infinite ease-in-out;
+
+box-shadow:0 15px 35px rgba(0,0,0,0.5);
+
+}
+
+
+
+.card h3{
+
+color:#f4b400;
+
+font-size:16px;
+
+margin-bottom:5px;
+
+}
+
+
+
+.card p{
+
+font-size:14px;
+
+opacity:0.9;
+
+}
+
+
+
+.delay{
+
+animation-delay:2s;
+
+}
+
+
+
+@keyframes float{
+
+0%,100%{transform:translateY(0);}
+50%{transform:translateY(-12px);}
+
+}
+
+
+
+/* =========================
+FEATURES SECTION
+========================= */
+
+.features{
+
+padding:90px;
+
+text-align:center;
+
+}
+
+
+
+.features h2{
+
+font-size:30px;
+
+margin-bottom:50px;
+
+}
+
+
+
+.features-grid{
+
+display:grid;
+
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+
+gap:40px;
+
+}
+
+
+
+.features-grid div{
+
+background:rgba(0,0,0,0.55);
+
+padding:35px;
+
+border-radius:12px;
+
+backdrop-filter:blur(8px);
+
+transition:0.3s;
+
+}
+
+
+
+.features-grid div:hover{
+
+transform:translateY(-8px);
+
+box-shadow:0 15px 40px rgba(0,0,0,0.6);
+
+}
+
+
+
+.features-grid i{
+
+font-size:26px;
+
+color:#f4b400;
+
+margin-bottom:12px;
+
+}
+
+
+
+/* =========================
+SCROLL REVEAL
+========================= */
+
+.reveal{
+
+opacity:0;
+
+transform:translateY(40px);
+
+transition:all 1s ease;
+
+}
+
+
+
+.reveal.active{
+
+opacity:1;
+
+transform:translateY(0);
+
+}
+
+
+
+/* =========================
+FOOTER
+========================= */
+
+footer{
+
+text-align:center;
+
+padding:18px;
+
+background:rgba(0,0,0,0.4);
+
+font-size:14px;
+
+}
+
+
+
+/* =========================
+MOBILE RESPONSIVE
+========================= */
+
+@media(max-width:900px){
+
+.hero{
+
+flex-direction:column;
+
+text-align:center;
+
+padding:40px;
+
+}
+
+.hero-left h1{
+
+font-size:32px;
+
+}
+
+.dashboard{
+
+margin-top:40px;
+
+transform:none;
+
+}
+
+.role-buttons{
+
+grid-template-columns:1fr;
+
+}
+
+}
+
+
+
+/* =========================
+LOGIN PAGE
+========================= */
+
+.login-page{
+
+display:flex;
+
+justify-content:center;
+
+align-items:center;
+
+min-height:100vh;
+
+background:
+linear-gradient(rgba(0,0,0,0.45),rgba(0,0,0,0.55)),
+url("../images/hm.jpg");
+
+background-size:cover;
+
+background-position:center;
+
+}
+
+
+
+/* LOGIN CARD */
+
+.login-card{
+
+width:380px;
+
+background:rgba(0,0,0,0.65);
+
+padding:40px;
+
+border-radius:15px;
+
+backdrop-filter:blur(12px);
+
+box-shadow:0 20px 45px rgba(0,0,0,0.7);
+
+text-align:center;
+
+animation:fadeUp 1s ease;
+
+}
+
+
+
+@keyframes fadeUp{
+
+from{
+opacity:0;
+transform:translateY(20px);
+}
+
+to{
+opacity:1;
+transform:translateY(0);
+}
+
+}
+
+
+
+/* LOGIN LOGO */
+
+.login-logo{
+
+margin-bottom:25px;
+
+color:#f4b400;
+
+}
+
+
+
+.login-logo i{
+
+font-size:42px;
+
+margin-bottom:6px;
+
+}
+
+
+
+.login-logo h2{
+
+font-weight:600;
+
+}
+
+
+
+/* LOGIN ERROR */
+
+.login-error{
+
+background:#ff4d4d;
+
+padding:10px;
+
+border-radius:6px;
+
+margin-bottom:15px;
+
+font-size:14px;
+
+}
+
+
+
+/* INPUT GROUP */
+
+.input-group{
+
+display:flex;
+
+align-items:center;
+
+background:rgba(255,255,255,0.08);
+
+margin-bottom:15px;
+
+border-radius:8px;
+
+padding:10px;
+
+}
+
+
+
+.input-group i{
+
+margin-right:10px;
+
+color:#f4b400;
+
+}
+
+
+
+.input-group input{
+
+border:none;
+
+background:transparent;
+
+color:white;
+
+width:100%;
+
+outline:none;
+
+font-size:14px;
+
+}
+
+
+
+/* LOGIN BUTTON */
+
+.login-submit{
+
+width:100%;
+
+padding:12px;
+
+border:none;
+
+border-radius:8px;
+
+background:#f4b400;
+
+color:black;
+
+font-weight:600;
+
+cursor:pointer;
+
+margin-top:10px;
+
+transition:0.3s;
+
+}
+
+
+
+.login-submit:hover{
+
+background:#ffcc33;
+
+transform:translateY(-2px);
+
+box-shadow:0 8px 20px rgba(0,0,0,0.5);
+
+}
+
+
+
+/* BACK HOME */
+
+.back-home{
+
+display:block;
+
+margin-top:20px;
+
+font-size:14px;
+
+color:#f4b400;
+
+text-decoration:none;
+
+}
+
+
+
+.back-home:hover{
+
+text-decoration:underline;
+
+}
+/* RESERVE PAGE */
+
+.reserve-bg{
+background:
+linear-gradient(rgba(0,0,0,0.65),rgba(0,0,0,0.75)),
+url("../images/ok.jpg");
+
+background-size:cover;
+background-position:center;
+
+min-height:100vh;
+display:flex;
+align-items:center;
+justify-content:center;
+}
+
+.reserve-wrapper{
+width:100%;
+display:flex;
+justify-content:center;
+align-items:center;
+}
+
+.reserve-card{
+width:420px;
+background:rgba(0,0,0,0.75);
+padding:40px;
+border-radius:15px;
+backdrop-filter:blur(10px);
+box-shadow:0 25px 50px rgba(0,0,0,0.7);
+color:white;
+}
+
+.reserve-card h2{
+text-align:center;
+margin-bottom:25px;
+color:#ffc107;
+}
+
+.reserve-card label{
+display:block;
+margin-top:12px;
+font-size:14px;
+}
+
+.reserve-card input,
+.reserve-card select{
+width:100%;
+padding:10px;
+margin-top:5px;
+border:none;
+border-radius:8px;
+background:rgba(255,255,255,0.1);
+color:white;
+outline:none;
+}
+
+.reserve-card input::placeholder{
+color:#ccc;
+}
+
+.reserve-card button{
+width:100%;
+margin-top:20px;
+padding:12px;
+background:#ffc107;
+color:black;
+border:none;
+border-radius:8px;
+font-weight:600;
+cursor:pointer;
+transition:0.3s;
+}
+
+.reserve-card button:hover{
+transform:translateY(-2px);
+box-shadow:0 10px 25px rgba(0,0,0,0.6);
+}
