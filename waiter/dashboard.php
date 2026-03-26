@@ -33,6 +33,7 @@ if(!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'waiter'){
 
 <h2>Waiter Dashboard</h2>
 <p>Welcome, <?php echo $_SESSION['user']['username']; ?></p>
+<a href="../admin/reservations.php" style="font-weight:bold;">&#128197; View Reservations</a> &nbsp;|&nbsp;
 <a href="../auth/logout.php" style="color:red; font-weight:bold;">Logout</a>
 <hr>
 

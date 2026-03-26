@@ -1,25 +1,23 @@
-<form method="POST" action="submit_manual_reservation.php">
+<?php
+include("../config/db.php");
 
-Name
+$name=$_POST['name'];
+$phone=$_POST['phone'];
+$date=$_POST['date'];
+$time=$_POST['time'];
+$guests=$_POST['guests'];
 
-<input type="text" name="name">
+/* AUTO ASSIGN TABLE */
 
-Phone
+$sql="SELECT * FROM tables WHERE capacity >= $guests LIMIT 1";
+$result=$conn->query($sql);
 
-<input type="text" name="phone">
+$table=$result->fetch_assoc()['id'];
 
-Date
+$conn->query("
+INSERT INTO bookings
+(customer_name,phone,booking_date,booking_time,num_guests,assigned_table,status)
+VALUES('$name','$phone','$date','$time',$guests,$table,'confirmed')
+");
 
-<input type="date" name="date">
-
-Time
-
-<input type="time" name="time">
-
-Guests
-
-<input type="number" name="guests">
-
-<button type="submit">Add Reservation</button>
-
-</form>
+header("Location: reservations.php?date=$date");

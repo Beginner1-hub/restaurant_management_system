@@ -1,7 +1,20 @@
-<?php include("config/db.php"); ?>
+<?php
+/* No login required — open to all visitors */
+include("config/db.php");
+
+$error = '';
+if (isset($_GET['error']) && $_GET['error'] === 'no_table') {
+    $error = "Sorry, no tables are available for your selected date, time, and party size. Please try a different time slot.";
+}
+
+$pre_date   = isset($_GET['date'])   ? htmlspecialchars($_GET['date'])   : '';
+$pre_time   = isset($_GET['time'])   ? htmlspecialchars($_GET['time'])   : '';
+$pre_guests = isset($_GET['guests']) ? intval($_GET['guests'])           : '';
+?>
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 
 <meta charset="UTF-8">
@@ -11,119 +24,146 @@
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
 
 <style>
 
-*{
+body{
+font-family: 'Inter', sans-serif;
+background:#f8f8f8;
 margin:0;
 padding:0;
-box-sizing:border-box;
-font-family: 'Segoe UI', sans-serif;
 }
 
-body{
-height:100vh;
-background:
-linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
-url('images/restaurant-bg.jpg');
-background-size:cover;
-background-position:center;
-display:flex;
-align-items:center;
-justify-content:center;
+/* container */
+
+.reserve-container{
+max-width:850px;
+margin:70px auto;
+background:white;
+padding:45px;
+border-radius:8px;
+box-shadow:0 8px 25px rgba(0,0,0,0.08);
 }
 
-.reserve-wrapper{
-width:100%;
-max-width:450px;
-padding:20px;
-}
+/* title */
 
-.reserve-card{
-background:rgba(255,255,255,0.1);
-backdrop-filter:blur(15px);
-border-radius:15px;
-padding:35px;
-color:white;
-box-shadow:0 10px 30px rgba(0,0,0,0.4);
-}
-
-.reserve-card h2{
+.reserve-title{
 text-align:center;
-margin-bottom:25px;
-font-size:28px;
-letter-spacing:1px;
+margin-bottom:35px;
 }
 
-form label{
+.reserve-title h2{
+font-family:'Playfair Display',serif;
+font-size:34px;
+margin:0;
+color:#222;
+}
+
+.reserve-title p{
+color:#777;
+margin-top:8px;
+}
+
+/* divider */
+
+.divider{
+width:60px;
+height:3px;
+background:#c9a227;
+margin:15px auto 25px auto;
+}
+
+/* grid */
+
+.form-grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:20px;
+}
+
+/* form fields */
+
+.form-group{
+display:flex;
+flex-direction:column;
+}
+
+.form-group label{
 font-size:14px;
-margin-top:12px;
-display:block;
+margin-bottom:6px;
+color:#444;
+font-weight:500;
 }
 
-.input-group{
-position:relative;
-margin-top:5px;
+.form-group input,
+.form-group select{
+padding:11px;
+border:1px solid #ddd;
+border-radius:5px;
+font-size:14px;
+transition:0.25s;
+background:#fafafa;
 }
 
-.input-group i{
-position:absolute;
-left:12px;
-top:12px;
-color:#ccc;
-}
-
-.input-group input,
-.input-group select{
-width:100%;
-padding:10px 10px 10px 35px;
-border:none;
-border-radius:6px;
+.form-group input:focus,
+.form-group select:focus{
+border-color:#c9a227;
+background:white;
 outline:none;
-font-size:14px;
+box-shadow:0 0 4px rgba(201,162,39,0.3);
 }
 
-.input-group input:focus,
-.input-group select:focus{
-box-shadow:0 0 5px #ff9800;
-}
+/* button */
 
-button{
+.reserve-btn{
+margin-top:30px;
 width:100%;
-margin-top:20px;
-padding:12px;
+padding:13px;
 border:none;
-border-radius:6px;
-background:#ff9800;
+background:#c9a227;
 color:white;
 font-size:16px;
+font-weight:500;
+border-radius:5px;
 cursor:pointer;
 transition:0.3s;
+letter-spacing:0.5px;
 }
 
-button:hover{
-background:#e68900;
-transform:scale(1.03);
+.reserve-btn:hover{
+background:#a8861f;
+transform:translateY(-1px);
 }
+
+/* back link */
 
 .back-home{
 display:block;
 text-align:center;
 margin-top:18px;
-color:#ddd;
 text-decoration:none;
+color:#666;
 font-size:14px;
 }
 
 .back-home:hover{
-color:white;
+color:#000;
 }
 
-@media(max-width:500px){
-.reserve-card{
-padding:25px;
+/* responsive */
+
+@media(max-width:700px){
+
+.form-grid{
+grid-template-columns:1fr;
 }
+
+.reserve-container{
+margin:40px 15px;
+padding:30px;
+}
+
 }
 
 </style>
@@ -132,65 +172,74 @@ padding:25px;
 
 <body>
 
-<div class="reserve-wrapper">
+<div class="reserve-container">
 
-<div class="reserve-card">
+<div class="reserve-title">
+<h2>Reserve Your Table</h2>
+<div class="divider"></div>
+<p>Book in advance to enjoy a perfect dining experience</p>
+</div>
 
-<h2>🍽 Reserve a Table</h2>
+<?php if($error): ?>
+<div style="background:#fdf0f0;border:1px solid #f5c6cb;border-radius:6px;
+            padding:13px 16px;margin-bottom:22px;color:#dc3545;font-size:14px;">
+  <?php echo htmlspecialchars($error); ?>
+</div>
+<?php endif; ?>
 
 <form method="POST" action="submit_reservation.php">
 
+<div class="form-grid">
+
+<div class="form-group">
 <label>Full Name</label>
-<div class="input-group">
-<i class="fa fa-user"></i>
 <input type="text" name="name" required>
 </div>
 
+<div class="form-group">
 <label>Email</label>
-<div class="input-group">
-<i class="fa fa-envelope"></i>
 <input type="email" name="email" required>
 </div>
 
+<div class="form-group">
 <label>Phone</label>
-<div class="input-group">
-<i class="fa fa-phone"></i>
 <input type="text" name="phone" required>
 </div>
 
-<label>Date</label>
-<div class="input-group">
-<i class="fa fa-calendar"></i>
-<input type="text" id="date" name="date" required>
-</div>
-
+<div class="form-group">
 <label>Guests</label>
-<div class="input-group">
-<i class="fa fa-users"></i>
-<input type="number" name="guests" min="1" max="12" required>
+<input type="number" name="guests" min="1" max="12" required
+  value="<?php echo $pre_guests ?: ''; ?>">
 </div>
 
+<div class="form-group">
+<label>Date</label>
+<input type="text" id="date" name="date" required
+  value="<?php echo $pre_date; ?>">
+</div>
+
+<div class="form-group">
 <label>Time</label>
-<div class="input-group">
-<i class="fa fa-clock"></i>
 <select name="time">
-<option>17:00</option>
-<option>17:30</option>
-<option>18:00</option>
-<option>18:30</option>
-<option>19:00</option>
-<option>19:30</option>
-<option>20:00</option>
+<?php
+$times = ['17:00','17:30','18:00','18:30','19:00','19:30','20:00'];
+foreach($times as $t){
+  $sel = ($pre_time === $t) ? ' selected' : '';
+  echo "<option$sel>$t</option>";
+}
+?>
 </select>
 </div>
 
-<button type="submit" name="reserve">Reserve Table</button>
+</div>
+
+<button class="reserve-btn" type="submit" name="reserve">
+Reserve Table
+</button>
 
 </form>
 
 <a href="index.php" class="back-home">← Back to Home</a>
-
-</div>
 
 </div>
 
@@ -204,4 +253,5 @@ dateFormat:"Y-m-d"
 </script>
 
 </body>
+
 </html>

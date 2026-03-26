@@ -9,6 +9,7 @@ if(!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'kitchen'){
 ?>
 
 <h2>Kitchen Dashboard</h2>
+<a href="../admin/reservations.php">&#128197; View Reservations</a> &nbsp;|&nbsp;
 <a href="../auth/logout.php">Logout</a>
 <hr>
 
