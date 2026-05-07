@@ -118,7 +118,7 @@ while ($row = $daily_q->fetch_assoc()){ $daily_labels[]=date('j',strtotime($row[
       <div class="kpi-card kpi-gold">
         <i class="fa-solid fa-sack-dollar kpi-icon"></i>
         <div class="kpi-label">Month Revenue</div>
-        <div class="kpi-val">Rs.&nbsp;<?php echo number_format($month_kpi['revenue'],0); ?></div>
+        <div class="kpi-val">DKK&nbsp;<?php echo number_format($month_kpi['revenue'],0); ?></div>
         <div class="kpi-sub"><?php echo date('F Y',mktime(0,0,0,$sel_month,1,$sel_year)); ?></div>
       </div>
       <div class="kpi-card kpi-blue">
@@ -131,12 +131,12 @@ while ($row = $daily_q->fetch_assoc()){ $daily_labels[]=date('j',strtotime($row[
         <i class="fa-solid fa-calendar-star kpi-icon"></i>
         <div class="kpi-label">Best Day</div>
         <div class="kpi-val" style="font-size:18px;"><?php echo $best_day ? date('M j', strtotime($best_day['d'])) : '—'; ?></div>
-        <div class="kpi-sub"><?php echo $best_day ? 'Rs.'.number_format($best_day['s'],0) : 'No data'; ?></div>
+        <div class="kpi-sub"><?php echo $best_day ? 'DKK '.number_format($best_day['s'],0) : 'No data'; ?></div>
       </div>
       <div class="kpi-card kpi-orange">
         <i class="fa-solid fa-chart-line kpi-icon"></i>
         <div class="kpi-label">Year Total <?php echo $sel_year; ?></div>
-        <div class="kpi-val">Rs.&nbsp;<?php echo number_format($year_total,0); ?></div>
+        <div class="kpi-val">DKK&nbsp;<?php echo number_format($year_total,0); ?></div>
         <div class="kpi-sub">All <?php echo $sel_year; ?> sales</div>
       </div>
     </div>
@@ -151,7 +151,7 @@ while ($row = $daily_q->fetch_assoc()){ $daily_labels[]=date('j',strtotime($row[
     <div class="card">
       <div class="section-hd">
         <h3><i class="fa-solid fa-calendar-days" style="color:var(--gold);margin-right:8px;"></i>All Months — <?php echo $sel_year; ?></h3>
-        <span style="font-size:12px;color:var(--muted);">Total: Rs.&nbsp;<?php echo number_format($year_total,0); ?></span>
+        <span style="font-size:12px;color:var(--muted);">Total: DKK&nbsp;<?php echo number_format($year_total,0); ?></span>
       </div>
       <?php foreach ($monthly as $m => $d): ?>
       <div class="month-bar-row">
@@ -159,7 +159,7 @@ while ($row = $daily_q->fetch_assoc()){ $daily_labels[]=date('j',strtotime($row[
         <div class="month-bar-track">
           <div class="month-bar-fill" style="width:<?php echo $month_max>0?round(($d['rev']/$month_max)*100):0; ?>%;background:<?php echo $m===$sel_month?'var(--gold)':'rgba(201,162,39,.35)'; ?>;"></div>
         </div>
-        <div class="month-bar-val">Rs.&nbsp;<?php echo number_format($d['rev'],0); ?></div>
+        <div class="month-bar-val">DKK&nbsp;<?php echo number_format($d['rev'],0); ?></div>
         <div style="font-size:11px;color:var(--muted);width:50px;text-align:right;"><?php echo $d['cnt']; ?> bills</div>
       </div>
       <?php endforeach; ?>
@@ -187,7 +187,7 @@ document.getElementById('sidebarToggle').addEventListener('click', () => {
       plugins:{ legend:{display:false} },
       scales:{
         x:{ grid:{color:'rgba(255,255,255,.05)'}, ticks:{color:'rgba(255,255,255,.4)',font:{size:11}} },
-        y:{ grid:{color:'rgba(255,255,255,.05)'}, ticks:{color:'rgba(255,255,255,.4)',font:{size:11},callback:v=>'Rs.'+v} }
+        y:{ grid:{color:'rgba(255,255,255,.05)'}, ticks:{color:'rgba(255,255,255,.4)',font:{size:11},callback:v=>'DKK '+v} }
       }
     }
   });

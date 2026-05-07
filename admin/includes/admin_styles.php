@@ -576,4 +576,80 @@ body::before {
   .kpi-grid { grid-template-columns: 1fr 1fr; }
   .grid-3   { grid-template-columns: 1fr; }
 }
+
+/* ── Mobile overlay backdrop ── */
+.sidebar-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 195;
+  background: rgba(0,0,0,.65);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+.sidebar-overlay.active { display: block; }
+
+/* ── Mobile hamburger button (fixed top-left, visible ≤768px) ── */
+.mob-menu-btn {
+  display: none;
+  position: fixed; top: 13px; left: 13px; z-index: 400;
+  width: 36px; height: 36px; border-radius: 9px;
+  background: var(--surface3); border: 1px solid var(--border2);
+  align-items: center; justify-content: center;
+  color: var(--text); cursor: pointer; font-size: 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.5);
+  transition: .18s;
+}
+.mob-menu-btn:hover { border-color: rgba(255,255,255,.2); }
+
+/* ── ≤768px: full mobile layout ── */
+@media (max-width: 768px) {
+  html, body { height: auto; overflow: auto; }
+
+  /* Sidebar: off-canvas overlay, full width restored */
+  .sidebar {
+    width: 260px !important;
+    transform: translateX(-100%);
+    transition: width 0s, transform .28s cubic-bezier(.16,1,.3,1);
+    z-index: 300;
+    overflow-y: auto;
+    box-shadow: 4px 0 28px rgba(0,0,0,.55);
+  }
+  .sidebar.mobile-open { transform: translateX(0); }
+
+  /* Restore text labels hidden by the 900px breakpoint */
+  .sidebar .brand-name,
+  .sidebar .su-info,
+  .sidebar .sb-section-label,
+  .sidebar .nav-item span,
+  .sidebar .btn-logout { display: revert !important; }
+  .sidebar .nav-item { justify-content: flex-start !important; padding: 9px 10px !important; }
+  .sidebar .sidebar-header { padding: 0 18px !important; }
+
+  /* Main: full viewport width, allow natural scroll */
+  .admin-main { margin-left: 0 !important; height: auto !important; overflow: visible !important; }
+  .page-content { overflow: visible; padding: 14px; }
+
+  /* Show mobile menu btn, hide desktop sidebar toggle */
+  .mob-menu-btn   { display: flex; }
+  .sidebar-toggle { display: none !important; }
+
+  /* Shift topbar content right so it doesn't hide behind the menu btn */
+  .topbar { padding-left: 58px; }
+
+  /* Grids collapse to single column */
+  .kpi-grid  { grid-template-columns: 1fr 1fr !important; }
+  .grid-2, .grid-73, .grid-half { grid-template-columns: 1fr !important; }
+  .grid-3    { grid-template-columns: 1fr !important; }
+
+  /* Tables scroll horizontally — JS wraps them in .tbl-scroll at runtime */
+  .tbl-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tbl-scroll .data-table { min-width: 560px; width: max-content; }
+}
+
+@media (max-width: 480px) {
+  .kpi-grid      { grid-template-columns: 1fr !important; }
+  .topbar-title  { font-size: 15px; }
+  .topbar-sub    { display: none; }
+  .page-content  { padding: 10px; }
+  .kpi-val       { font-size: 22px; }
+}
 </style>

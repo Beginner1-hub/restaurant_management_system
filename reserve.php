@@ -166,6 +166,19 @@ padding:30px;
 
 }
 
+@media(max-width:480px){
+
+.reserve-container{
+margin:20px 10px;
+padding:20px;
+}
+
+.reserve-title h2{
+font-size:26px;
+}
+
+}
+
 </style>
 
 </head>

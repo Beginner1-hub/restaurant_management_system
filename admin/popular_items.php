@@ -112,7 +112,7 @@ $chart_qty   = array_column(array_slice($item_rows,0,8), 'qty');
       <div class="kpi-card kpi-orange">
         <i class="fa-solid fa-coins kpi-icon"></i>
         <div class="kpi-label">Item Revenue</div>
-        <div class="kpi-val">Rs.&nbsp;<?php echo number_format($total_revenue,0); ?></div>
+        <div class="kpi-val">DKK&nbsp;<?php echo number_format($total_revenue,0); ?></div>
         <div class="kpi-sub">Top 12 items combined</div>
       </div>
     </div>
@@ -143,7 +143,7 @@ $chart_qty   = array_column(array_slice($item_rows,0,8), 'qty');
               <div style="height:100%;width:<?php echo $pct; ?>%;background:<?php echo $i===0?'var(--gold)':($i===1?'#94a3b8':($i===2?'#cd7c2f':'rgba(201,162,39,.35)')); ?>;border-radius:3px;"></div>
             </div>
           </div>
-          <div style="font-size:11px;color:var(--muted);min-width:60px;text-align:right;">Rs.&nbsp;<?php echo number_format($row['revenue'],0); ?></div>
+          <div style="font-size:11px;color:var(--muted);min-width:60px;text-align:right;">DKK&nbsp;<?php echo number_format($row['revenue'],0); ?></div>
         </div>
         <?php endforeach;
         else: ?>

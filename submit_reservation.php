@@ -1,4 +1,5 @@
 <?php
+ob_start();
 include("config/db.php");
 include("config/mail.php");
 
@@ -48,9 +49,22 @@ $ins = $conn->prepare("
     (customer_name, email, phone, booking_date, booking_time, num_guests, assigned_table, status, cancel_token)
     VALUES (?, ?, ?, ?, ?, ?, ?, 'confirmed', ?)
 ");
+if (!$ins) {
+    // Missing columns — direct user to run the migration
+    ob_end_clean();
+    die("<div style='font-family:sans-serif;max-width:600px;margin:60px auto;padding:24px;border:1px solid #f5c6cb;border-radius:8px;background:#fdf0f0;color:#721c24;'>
+        <h3>Database setup required</h3>
+        <p>The bookings table is missing required columns (<code>email</code> and/or <code>cancel_token</code>).</p>
+        <p>Please <a href='run_migration.php' style='color:#721c24;font-weight:bold;'>run the migration</a> first, then try again.</p>
+        <p style='font-size:12px;color:#999;'>MySQL error: " . htmlspecialchars($conn->error) . "</p>
+    </div>");
+}
 $ins->bind_param("sssssiss", $name, $email, $phone, $date, $time, $guests, $table_id, $cancel_token);
 $ins->execute();
 $booking_id = $conn->insert_id;
+
+// Mark the table as reserved
+$conn->query("UPDATE `tables` SET status='reserved' WHERE id=$table_id AND status='available'");
 
 /* ── build cancel link ───────────────────────────────────────────── */
 $base = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http')
@@ -190,9 +204,10 @@ $body = <<<HTML
 </html>
 HTML;
 
-sendEmail($email, $subject, $body);
+$email_ok = sendEmail($email, $subject, $body);
 
 /* ── redirect to confirmation page ──────────────────────────────── */
-header("Location: booking_confirmed.php?id=$booking_id&token=$cancel_token");
+ob_end_clean();
+header("Location: booking_confirmed.php?id=$booking_id&token=$cancel_token&email_sent=" . ($email_ok ? '1' : '0'));
 exit;
 ?>

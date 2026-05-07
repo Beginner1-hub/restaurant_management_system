@@ -327,7 +327,7 @@ function sparkline(array $data, string $color = '#c9a227', int $w = 80, int $h =
           <div class="kpi-icon-badge"><i class="fa-solid fa-sack-dollar"></i></div>
         </div>
         <div class="kpi-val">
-          Rs.&nbsp;<span class="counter-num" data-target="<?php echo $today_revenue; ?>" data-prefix=""></span>
+          DKK&nbsp;<span class="counter-num" data-target="<?php echo $today_revenue; ?>" data-prefix=""></span>
         </div>
         <div class="kpi-footer">
           <div class="kpi-sub">
@@ -501,7 +501,7 @@ function sparkline(array $data, string $color = '#c9a227', int $w = 80, int $h =
               <td style="color:var(--muted);">T-<?php echo $row['table_number'] ?? '?'; ?></td>
               <td><?php echo htmlspecialchars($row['waiter'] ?? '—'); ?></td>
               <td><span class="pill pill-<?php echo $row['status']; ?>"><?php echo $row['status']; ?></span></td>
-              <td class="text-gold fw-600">Rs.&nbsp;<?php echo number_format($row['total'],0); ?></td>
+              <td class="text-gold fw-600">DKK&nbsp;<?php echo number_format($row['total'],0); ?></td>
               <td style="color:var(--muted);"><?php echo date('H:i', strtotime($row['created_at'])); ?></td>
             </tr>
             <?php endwhile;
@@ -612,22 +612,21 @@ function sparkline(array $data, string $color = '#c9a227', int $w = 80, int $h =
         </div>
         <div class="table-floor">
           <?php foreach ($tables_arr as $t): ?>
-          <div class="tmap <?php echo htmlspecialchars($t['status']); ?>" title="Table <?php echo $t['table_number']; ?> — <?php echo $t['capacity']; ?> seats — <?php echo $t['status']; ?>">
+          <div class="tmap <?php echo htmlspecialchars($t['status']); ?>">
             <div class="tmap-icon">
-              <?php echo $t['status']==='available' ? '🟢' : ($t['status']==='occupied' ? '🔴' : '🟠'); ?>
+              <?php
+                if ($t['status'] === 'available')  echo '🟢';
+                elseif ($t['status'] === 'occupied') echo '🔴';
+                else echo '🟠';
+              ?>
             </div>
             <div class="tmap-num"><?php echo $t['table_number']; ?></div>
             <div class="tmap-cap"><?php echo $t['capacity']; ?> seats</div>
           </div>
           <?php endforeach; ?>
-          <?php if (empty($tables_arr)): ?>
-          <div style="color:var(--muted);font-size:12px;padding:16px 0;">No tables configured</div>
-          <?php endif; ?>
         </div>
-        <div style="margin-top:12px;display:flex;gap:12px;font-size:11px;color:var(--muted);">
-          <span>🟢 Available</span>
-          <span>🔴 Occupied</span>
-          <span>🟠 Reserved</span>
+        <div style="display:flex;gap:14px;margin-top:12px;font-size:11px;color:var(--muted);">
+          <span>🟢 Available</span><span>🔴 Occupied</span><span>🟠 Reserved</span>
         </div>
       </div>
 
@@ -708,13 +707,13 @@ document.querySelectorAll('.counter-num[data-target]').forEach(el => {
       plugins:{ legend:{display:false},
         tooltip:{ backgroundColor:'#1c1e2e', borderColor:'rgba(201,162,39,.3)', borderWidth:1,
           padding:10, cornerRadius:8, titleColor:'rgba(255,255,255,.6)', bodyColor:'#fff',
-          callbacks:{ label: ctx=>' Rs. '+Number(ctx.parsed.y).toLocaleString() } }
+          callbacks:{ label: ctx=>' DKK '+Number(ctx.parsed.y).toLocaleString() } }
       },
       scales:{
         x:{ grid:{color:'rgba(255,255,255,.04)',drawBorder:false},
             ticks:{color:'rgba(255,255,255,.35)',font:{size:11,family:'Inter'}} },
         y:{ grid:{color:'rgba(255,255,255,.04)',drawBorder:false},
-            ticks:{color:'rgba(255,255,255,.35)',font:{size:11,family:'Inter'},callback:v=>'Rs.'+v} }
+            ticks:{color:'rgba(255,255,255,.35)',font:{size:11,family:'Inter'},callback:v=>'DKK '+v} }
       }
     }
   });
@@ -753,7 +752,7 @@ const CMDS = [
   {label:'Daily Sales',   desc:"Today's report",   icon:'fa-receipt',            href:'daily_sales.php'},
   {label:'Monthly Sales', desc:'Monthly summary',  icon:'fa-calendar-days',      href:'monthly_sales.php'},
   {label:'Popular Items', desc:'Best sellers',     icon:'fa-fire',               href:'popular_items.php'},
-  {label:'Logout',        desc:'Sign out',         icon:'fa-right-from-bracket', href:'../auth/logout.php'},
+{label:'Logout',        desc:'Sign out',         icon:'fa-right-from-bracket', href:'../auth/logout.php'},
 ];
 
 const overlay=document.getElementById('cmdOverlay');

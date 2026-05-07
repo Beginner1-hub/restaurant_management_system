@@ -425,6 +425,60 @@ main { position: relative; z-index: 1; }
 .access-card.cashier .access-badge { background:rgba(106,180,255,.10);color:#6ab4ff; }
 .access-card.kitchen .access-badge { background:rgba(255,128,96,.10); color:#ff8060; }
 
+/* ── TERMS MODAL ── */
+.tc-overlay {
+  display: none; position: fixed; inset: 0; z-index: 9000;
+  background: rgba(0,0,0,.78); backdrop-filter: blur(10px);
+  align-items: flex-start; justify-content: center;
+  padding: 48px 16px; overflow-y: auto;
+}
+.tc-overlay.open { display: flex; }
+.tc-modal {
+  background: #111218; border: 1px solid var(--border2);
+  border-radius: 18px; width: 100%; max-width: 720px;
+  box-shadow: 0 40px 80px rgba(0,0,0,.8);
+  animation: tcIn .25s cubic-bezier(.16,1,.3,1);
+}
+@keyframes tcIn { from{opacity:0;transform:scale(.95) translateY(-14px);} to{opacity:1;transform:none;} }
+.tc-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 22px 28px;
+  border-bottom: 1px solid var(--border);
+}
+.tc-head h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px; font-weight: 700; color: #fff;
+  display: flex; align-items: center; gap: 10px;
+}
+.tc-head h2 i { color: var(--gold); font-size: 17px; }
+.tc-close {
+  background: none; border: none; cursor: pointer;
+  color: rgba(255,255,255,.4); font-size: 18px; padding: 4px 8px;
+  border-radius: 7px; transition: .15s; line-height: 1;
+}
+.tc-close:hover { color: #ef4444; background: rgba(239,68,68,.1); }
+.tc-body { padding: 28px; max-height: 70vh; overflow-y: auto; }
+.tc-body::-webkit-scrollbar { width: 4px; }
+.tc-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 4px; }
+.tc-section { margin-bottom: 26px; }
+.tc-section h3 {
+  font-size: 13px; font-weight: 700; color: var(--gold);
+  text-transform: uppercase; letter-spacing: .08em;
+  margin-bottom: 9px; display: flex; align-items: center; gap: 7px;
+}
+.tc-section h3 i { font-size: 11px; }
+.tc-section p, .tc-section li {
+  font-size: 13px; color: rgba(255,255,255,.55); line-height: 1.78;
+}
+.tc-section ul { padding-left: 18px; }
+.tc-section li { margin-bottom: 5px; }
+.tc-section strong { color: rgba(255,255,255,.75); }
+.tc-updated {
+  font-size: 11px; color: rgba(255,255,255,.25);
+  padding: 14px 28px; border-top: 1px solid var(--border);
+  text-align: right;
+}
+
 /* ── CTA BANNER ── */
 .cta-section {
   padding: 90px 64px;
@@ -516,6 +570,30 @@ footer {
   <div class="orb orb1"></div>
   <div class="orb orb2"></div>
   <div class="orb orb3"></div>
+  <!-- Pinterest image credit -->
+  <div style="
+    position: absolute;
+    bottom: 14px;
+    right: 16px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(0,0,0,0.38);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 10.5px;
+    color: rgba(255,255,255,0.45);
+    letter-spacing: .3px;
+    pointer-events: none;
+    user-select: none;
+  ">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="11" height="11" fill="#e60023" style="flex-shrink:0;">
+      <path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/>
+    </svg>
+    Image source: Pinterest
+  </div>
 </div>
 
 <!-- NAVBAR -->
@@ -553,7 +631,7 @@ footer {
 
     <p class="hero-sub">
       One integrated platform for orders, kitchen workflow, billing,
-      reservations and real-time analytics — built for every role in your team.
+      reservations and real-time analytics,built for every role in your team.
     </p>
 
     <div class="hero-btns">
@@ -740,10 +818,102 @@ footer {
     RestaurantMS
   </a>
   <span>&copy; <?php echo date('Y'); ?> Restaurant Management System. All rights reserved.</span>
-  <a href="reserve.php" style="color:var(--gold);text-decoration:none;font-weight:500;font-size:13px;">
-    Make a Reservation &rarr;
-  </a>
+  <div style="display:flex;align-items:center;gap:18px;">
+    <button onclick="openTC()" style="background:none;border:none;color:var(--muted);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:.15s;padding:0;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--muted)'">
+      Terms &amp; Conditions
+    </button>
+    <a href="reserve.php" style="color:var(--gold);text-decoration:none;font-weight:500;font-size:13px;">
+      Make a Reservation &rarr;
+    </a>
+  </div>
 </footer>
+
+<!-- TERMS & CONDITIONS MODAL -->
+<div class="tc-overlay" id="tcOverlay" onclick="if(event.target===this)closeTC()">
+  <div class="tc-modal">
+    <div class="tc-head">
+      <h2><i class="fa-solid fa-file-contract"></i> Terms &amp; Conditions</h2>
+      <button class="tc-close" onclick="closeTC()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="tc-body">
+
+      <div class="tc-section">
+        <h3><i class="fa-solid fa-circle-info"></i> 1. About This Platform</h3>
+        <p>RestaurantMS is a web-based restaurant management platform providing table reservation, order management, kitchen workflow, billing, and analytics services. By accessing or using this platform — whether as a guest making a reservation or as a staff member — you agree to be bound by these Terms &amp; Conditions.</p>
+      </div>
+
+      <div class="tc-section">
+        <h3><i class="fa-solid fa-calendar-check"></i> 2. Table Reservations</h3>
+        <ul>
+          <li>Reservations are subject to table availability at the time of booking.</li>
+          <li>A valid name, guest count, date, time, and contact email are required to complete a reservation.</li>
+          <li>Confirmation is sent by email once your booking is accepted. Please ensure your email address is correct.</li>
+          <li>The restaurant reserves the right to decline or cancel a reservation at its discretion, in which case you will be notified by email.</li>
+          <li>Walk-in guests are accommodated subject to availability and are not guaranteed a table.</li>
+        </ul>
+      </div>
+
+      <div class="tc-section">
+        <h3><i class="fa-solid fa-ban"></i> 3. Cancellation Policy</h3>
+        <ul>
+          <li>Reservations may be cancelled by the guest at any time using the cancellation link provided in your confirmation email.</li>
+          <li>We ask that cancellations be made at least <strong>2 hours</strong> before your booking time as a courtesy to other guests.</li>
+          <li>No-shows without prior cancellation may affect the ability to make future reservations.</li>
+          <li>The restaurant may cancel a reservation without liability in the event of circumstances beyond its control (e.g. emergency closure, public health requirements).</li>
+        </ul>
+      </div>
+
+      <div class="tc-section">
+        <h3><i class="fa-solid fa-lock"></i> 4. Staff Access &amp; Accounts</h3>
+        <ul>
+          <li>Staff accounts (Admin, Waiter, Cashier, Kitchen) are created and managed by the system administrator.</li>
+          <li>Staff members are responsible for keeping their login credentials confidential.</li>
+          <li>Unauthorised access to staff areas or other users' accounts is strictly prohibited.</li>
+          <li>The administrator may suspend or remove staff access at any time without prior notice.</li>
+          <li>All actions performed under a staff account are logged and may be reviewed for audit purposes.</li>
+        </ul>
+      </div>
+
+      <div class="tc-section">
+        <h3><i class="fa-solid fa-database"></i> 5. Data &amp; Privacy</h3>
+        <ul>
+          <li>Guest information (name, email, guest count) collected during reservation is used solely to manage your booking.</li>
+          <li>We do not sell or share your personal data with third parties.</li>
+          <li>Reservation and order data is retained for operational and reporting purposes.</li>
+          <li>By submitting a reservation, you consent to receiving a booking confirmation and cancellation email.</li>
+          <li>Staff login and activity data is stored securely and used for internal operational oversight only.</li>
+        </ul>
+      </div>
+
+      <div class="tc-section">
+        <h3><i class="fa-solid fa-file-invoice-dollar"></i> 6. Billing &amp; Payments</h3>
+        <ul>
+          <li>All prices displayed are in DKK (Danish Krone) and are inclusive of applicable VAT.</li>
+          <li>Bills are generated by cashier staff based on confirmed orders placed at the table.</li>
+          <li>Disputes regarding charges must be raised with staff at the time of billing.</li>
+          <li>Receipts are available on request and may be printed or issued digitally.</li>
+        </ul>
+      </div>
+
+      <div class="tc-section">
+        <h3><i class="fa-solid fa-triangle-exclamation"></i> 7. Limitation of Liability</h3>
+        <p>RestaurantMS is provided as an operational tool. The restaurant and its management accept no liability for technical failures, data loss caused by third-party infrastructure, or errors resulting from incorrect information entered by users. The platform is provided <strong>"as is"</strong> without warranty of uninterrupted availability.</p>
+      </div>
+
+      <div class="tc-section">
+        <h3><i class="fa-solid fa-rotate"></i> 8. Changes to These Terms</h3>
+        <p>These Terms &amp; Conditions may be updated at any time. Continued use of the platform after any changes constitutes acceptance of the revised terms. The date of the most recent update is shown below.</p>
+      </div>
+
+      <div class="tc-section">
+        <h3><i class="fa-solid fa-envelope"></i> 9. Contact</h3>
+        <p>For questions regarding these terms, reservations, or data requests, please contact the restaurant management directly through the reservation page or speak with a staff member on site.</p>
+      </div>
+
+    </div>
+    <div class="tc-updated">Last updated: <?php echo date('F j, Y'); ?></div>
+  </div>
+</div>
 
 <script>
 /* ── SCROLL PROGRESS ── */
@@ -818,6 +988,17 @@ document.querySelectorAll('.access-card').forEach(card => {
     card.style.transform = '';
   });
 });
+
+/* ── TERMS & CONDITIONS MODAL ── */
+function openTC() {
+  document.getElementById('tcOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeTC() {
+  document.getElementById('tcOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeTC(); });
 </script>
 
 </body>

@@ -1,8 +1,17 @@
 <?php
+session_start();
 include("../config/db.php");
 
-$id=$_GET['id'];
+if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
+    header("Location: ../auth/login.php"); exit();
+}
 
-$conn->query("UPDATE bookings SET status='completed' WHERE id=$id");
+$id = (int)($_GET['id'] ?? 0);
+if ($id > 0) {
+    $stmt = $conn->prepare("UPDATE bookings SET status='completed' WHERE id=?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $stmt->close();
+}
 
-header("Location: reservations.php");
+header("Location: reservations.php"); exit();

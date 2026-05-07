@@ -23,7 +23,8 @@ if (!$booking) {
 
 $formatted_date = date("l, d F Y", strtotime($booking['booking_date']));
 $formatted_time = date("H:i", strtotime($booking['booking_time']));
-$cancel_url = "cancel_booking.php?token=" . urlencode($token);
+$cancel_url  = "cancel_booking.php?token=" . urlencode($token);
+$email_sent  = ($_GET['email_sent'] ?? '1') === '1';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -180,6 +181,14 @@ body {
   text-align: center;
 }
 
+@media (max-width: 660px) {
+  .container { margin: 20px 12px; }
+  .banner    { padding: 24px 20px; }
+  .banner h2 { font-size: 22px; }
+  .body      { padding: 22px 20px; }
+  .footer    { padding: 14px 20px; }
+}
+
 </style>
 </head>
 <body>
@@ -235,10 +244,19 @@ body {
       </div>
     </div>
 
+    <?php if ($email_sent): ?>
     <div class="email-notice">
-      &#9993; A confirmation email with a cancellation link has been sent to your inbox.
-      Check your spam folder if you don't see it.
+      &#9993; A confirmation email with a cancellation link has been sent to
+      <strong><?php echo htmlspecialchars($booking['email']); ?></strong>.
+      Check your spam/junk folder if you don't see it within a few minutes.
     </div>
+    <?php else: ?>
+    <div class="email-notice" style="background:#fff8e6;border-color:#f5c842;color:#7a5800;">
+      &#9888; We couldn't send the confirmation email to
+      <strong><?php echo htmlspecialchars($booking['email']); ?></strong>.
+      Your booking is confirmed — use the cancel button below or save this page link to manage your reservation.
+    </div>
+    <?php endif; ?>
 
     <div class="actions">
       <a href="index.php" class="btn-home">Back to Home</a>

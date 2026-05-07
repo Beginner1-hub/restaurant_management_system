@@ -16,6 +16,8 @@ $r = $conn->query("
 ");
 $summary = $r->fetch_assoc();
 
+$net_day = (float)$summary['revenue'];
+
 /* ── Per-order breakdown ── */
 $rows = $conn->query("
     SELECT b.id, b.total, b.billing_date,
@@ -102,9 +104,15 @@ for ($i = 29; $i >= 0; $i--) {
     <div class="kpi-grid" style="margin-bottom:24px;">
       <div class="kpi-card kpi-gold">
         <i class="fa-solid fa-sack-dollar kpi-icon"></i>
-        <div class="kpi-label">Day Revenue</div>
-        <div class="kpi-val">Rs.&nbsp;<?php echo number_format($summary['revenue'],0); ?></div>
+        <div class="kpi-label">Gross Revenue</div>
+        <div class="kpi-val">DKK&nbsp;<?php echo number_format($summary['revenue'],0); ?></div>
         <div class="kpi-sub"><?php echo $selected; ?></div>
+      </div>
+      <div class="kpi-card kpi-green">
+        <i class="fa-solid fa-circle-check kpi-icon"></i>
+        <div class="kpi-label">Net Revenue</div>
+        <div class="kpi-val">DKK&nbsp;<?php echo number_format($net_day,0); ?></div>
+        <div class="kpi-sub">Total revenue today</div>
       </div>
       <div class="kpi-card kpi-blue">
         <i class="fa-solid fa-receipt kpi-icon"></i>
@@ -115,7 +123,7 @@ for ($i = 29; $i >= 0; $i--) {
       <div class="kpi-card kpi-green">
         <i class="fa-solid fa-calculator kpi-icon"></i>
         <div class="kpi-label">Avg Bill</div>
-        <div class="kpi-val">Rs.&nbsp;<?php echo $summary['bills'] > 0 ? number_format($summary['revenue']/$summary['bills'],0) : 0; ?></div>
+        <div class="kpi-val">DKK&nbsp;<?php echo $summary['bills'] > 0 ? number_format($summary['revenue']/$summary['bills'],0) : 0; ?></div>
         <div class="kpi-sub">Per transaction</div>
       </div>
       <div class="kpi-card kpi-orange">
@@ -151,7 +159,7 @@ for ($i = 29; $i >= 0; $i--) {
             <td>T-<?php echo $row['table_number'] ?? '?'; ?></td>
             <td><?php echo htmlspecialchars($row['cashier'] ?? '—'); ?></td>
             <td style="color:var(--muted);"><?php echo date('H:i', strtotime($row['billing_date'])); ?></td>
-            <td style="text-align:right;color:var(--gold);font-weight:600;">Rs.&nbsp;<?php echo number_format($row['total'],2); ?></td>
+            <td style="text-align:right;color:var(--gold);font-weight:600;">DKK&nbsp;<?php echo number_format($row['total'],2); ?></td>
           </tr>
           <?php endwhile; ?>
         </tbody>
@@ -193,7 +201,7 @@ document.getElementById('sidebarToggle').addEventListener('click', () => {
       plugins:{ legend:{display:false} },
       scales:{
         x:{ grid:{display:false}, ticks:{ color:'rgba(255,255,255,.3)', font:{size:10}, maxRotation:45, maxTicksLimit:10 } },
-        y:{ grid:{ color:'rgba(255,255,255,.05)' }, ticks:{ color:'rgba(255,255,255,.4)', font:{size:11}, callback:v=>'Rs.'+v } }
+        y:{ grid:{ color:'rgba(255,255,255,.05)' }, ticks:{ color:'rgba(255,255,255,.4)', font:{size:11}, callback:v=>'DKK '+v } }
       }
     }
   });

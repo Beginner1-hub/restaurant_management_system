@@ -9,18 +9,27 @@ include("../config/db.php");
 if (!isset($_SESSION['user'])) { header("Location: ../auth/login.php"); exit(); }
 $role     = $_SESSION['user']['role'];
 $username = $_SESSION['user']['username'];
-$is_admin = ($role === 'admin');
+$is_admin  = ($role === 'admin');
+$is_waiter = ($role === 'waiter');
+$can_act   = ($is_admin || $is_waiter);
 if (!in_array($role, ['admin','waiter','kitchen','cashier'])) {
     header("Location: ../auth/login.php"); exit();
 }
 
 /* ── LIST-VIEW STATUS FORM (regular POST) ───────────────────────── */
-if ($is_admin && $_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['update_status'])) {
+if ($can_act && $_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['update_status'])) {
     $bid = intval($_POST['booking_id'] ?? 0);
     $bs  = $_POST['new_status'] ?? '';
     if ($bid && in_array($bs, ['confirmed','pending','seated','completed','cancelled'])) {
+        $bq = $conn->prepare("SELECT assigned_table FROM bookings WHERE id=?");
+        $bq->bind_param("i", $bid); $bq->execute();
+        $bk = $bq->get_result()->fetch_assoc(); $bq->close();
         $s = $conn->prepare("UPDATE bookings SET status=? WHERE id=?");
-        $s->bind_param("si", $bs, $bid); $s->execute();
+        $s->bind_param("si", $bs, $bid); $s->execute(); $s->close();
+        if (in_array($bs, ['cancelled','completed']) && $bk && $bk['assigned_table']) {
+            $tid = (int)$bk['assigned_table'];
+            $conn->query("UPDATE `tables` SET status='available' WHERE id=$tid AND id NOT IN (SELECT table_id FROM orders WHERE status IN ('pending','preparing','ready','served') AND table_id IS NOT NULL)");
+        }
     }
     $rd = $_POST['current_date'] ?? date('Y-m-d');
     header("Location: reservations.php?date=$rd"); exit;
@@ -31,7 +40,12 @@ if ($is_admin && $_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['update_sta
  * ──────────────────────────────────────────────────────────────── */
 if (isset($_GET['action'])) {
     header('Content-Type: application/json');
-    if (!$is_admin) { echo json_encode(['success'=>false,'error'=>'Unauthorized']); exit; }
+    $action = $_GET['action'];
+    // waiter may use walkin and update_status; all other actions require admin
+    $waiter_allowed = ['walkin','update_status','update_guests'];
+    if (!$is_admin && !($is_waiter && in_array($action, $waiter_allowed))) {
+        echo json_encode(['success'=>false,'error'=>'Unauthorized']); exit;
+    }
 
     /* ── update booking status ── */
     if ($_GET['action'] === 'update_status') {
@@ -41,9 +55,31 @@ if (isset($_GET['action'])) {
         if (!$id || !in_array($st, $allowed)) {
             echo json_encode(['success'=>false,'error'=>'Invalid request']); exit;
         }
+        /* Fetch booking before updating so we can free the table if needed */
+        $bq = $conn->prepare("SELECT assigned_table, status FROM bookings WHERE id=?");
+        $bq->bind_param("i", $id); $bq->execute();
+        $bk = $bq->get_result()->fetch_assoc(); $bq->close();
         $s = $conn->prepare("UPDATE bookings SET status=? WHERE id=?");
-        $s->bind_param("si", $st, $id); $s->execute();
+        $s->bind_param("si", $st, $id); $s->execute(); $s->close();
+        /* Free the table when booking is cancelled or completed and was seated/occupied */
+        if (in_array($st, ['cancelled','completed']) && $bk && $bk['assigned_table']) {
+            $tid = (int)$bk['assigned_table'];
+            $conn->query("UPDATE `tables` SET status='available' WHERE id=$tid AND id NOT IN (SELECT table_id FROM orders WHERE status IN ('pending','preparing','ready','served') AND table_id IS NOT NULL)");
+        }
         echo json_encode(['success'=>true,'status'=>$st]);
+        exit;
+    }
+
+    /* ── update guest count ── */
+    if ($_GET['action'] === 'update_guests') {
+        $id     = intval($_POST['booking_id'] ?? 0);
+        $guests = intval($_POST['num_guests'] ?? 0);
+        if (!$id || $guests < 1 || $guests > 100) {
+            echo json_encode(['success'=>false,'error'=>'Invalid guest count']); exit;
+        }
+        $s = $conn->prepare("UPDATE bookings SET num_guests=? WHERE id=?");
+        $s->bind_param("ii", $guests, $id); $s->execute();
+        echo json_encode(['success'=>true,'num_guests'=>$guests]);
         exit;
     }
 
@@ -80,24 +116,33 @@ if (isset($_GET['action'])) {
 
     /* ── walk-in booking ── */
     if ($_GET['action'] === 'walkin') {
-        $name   = trim($_POST['name'] ?? '');
-        $guests = intval($_POST['guests'] ?? 1);
-        $time   = $_POST['time'] ?? date('H:00');
-        $date   = $_POST['date'] ?? date('Y-m-d');
+        $name      = trim($_POST['name'] ?? '');
+        $guests    = intval($_POST['guests'] ?? 1);
+        $time      = $_POST['time'] ?? date('H:00');
+        $date      = $_POST['date'] ?? date('Y-m-d');
+        $req_table = intval($_POST['table_id'] ?? 0);
         if (!$name) { echo json_encode(['success'=>false,'error'=>'Name required']); exit; }
 
-        /* find a free table */
-        $tq = $conn->prepare("
-            SELECT id FROM tables WHERE capacity >= ?
-            AND id NOT IN (
-                SELECT assigned_table FROM bookings
-                WHERE booking_date=? AND status NOT IN ('cancelled','completed')
-                AND ABS(TIME_TO_SEC(booking_time) - TIME_TO_SEC(?)) < 5400
-            ) ORDER BY capacity ASC LIMIT 1
-        ");
-        $tq->bind_param("iss", $guests, $date, $time); $tq->execute();
-        $t = $tq->get_result()->fetch_assoc();
-        if (!$t) { echo json_encode(['success'=>false,'error'=>'No tables available for that time']); exit; }
+        if ($req_table > 0) {
+            /* Use the specific table the waiter selected */
+            $tq = $conn->prepare("SELECT id FROM `tables` WHERE id = ?");
+            $tq->bind_param("i", $req_table); $tq->execute();
+            $t = $tq->get_result()->fetch_assoc();
+            if (!$t) { echo json_encode(['success'=>false,'error'=>'Selected table not found']); exit; }
+        } else {
+            /* No table specified — auto-pick the smallest available one */
+            $tq = $conn->prepare("
+                SELECT id FROM `tables` WHERE capacity >= ?
+                AND id NOT IN (
+                    SELECT assigned_table FROM bookings
+                    WHERE booking_date=? AND status NOT IN ('cancelled','completed')
+                    AND ABS(TIME_TO_SEC(booking_time) - TIME_TO_SEC(?)) < 5400
+                ) ORDER BY capacity ASC LIMIT 1
+            ");
+            $tq->bind_param("iss", $guests, $date, $time); $tq->execute();
+            $t = $tq->get_result()->fetch_assoc();
+            if (!$t) { echo json_encode(['success'=>false,'error'=>'No tables available for that time']); exit; }
+        }
 
         $token = bin2hex(random_bytes(16));
         $phone = 'Walk-in'; $email = '';
@@ -110,11 +155,27 @@ if (isset($_GET['action'])) {
         $ins->execute();
         $newId = $conn->insert_id;
 
+        /* Mark table occupied immediately so no second walk-in can claim it */
+        $conn->query("UPDATE `tables` SET status='occupied' WHERE id={$t['id']}");
+
         echo json_encode(['success'=>true,'booking'=>[
             'id'=>$newId,'customer_name'=>$name,'email'=>'','phone'=>'Walk-in',
             'booking_date'=>$date,'booking_time'=>$time,'num_guests'=>$guests,
             'assigned_table'=>$t['id'],'status'=>'seated','cancel_token'=>$token
         ]]);
+        exit;
+    }
+
+    /* ── delete booking ── */
+    if ($_GET['action'] === 'delete_booking') {
+        $bid = intval($_POST['booking_id'] ?? 0);
+        if (!$bid) { echo json_encode(['success'=>false,'error'=>'Invalid ID']); exit; }
+        $bk = $conn->query("SELECT assigned_table FROM bookings WHERE id=$bid")->fetch_assoc();
+        if (!$bk) { echo json_encode(['success'=>false,'error'=>'Not found']); exit; }
+        $conn->query("UPDATE bookings SET status='cancelled' WHERE id=$bid");
+        $tid = (int)$bk['assigned_table'];
+        $conn->query("UPDATE `tables` SET status='available' WHERE id=$tid AND id NOT IN (SELECT table_id FROM orders WHERE status IN ('pending','preparing','ready','served') AND table_id IS NOT NULL)");
+        echo json_encode(['success'=>true]);
         exit;
     }
 
@@ -135,7 +196,7 @@ if (isset($_GET['cal'])) [$cal_y,$cal_m] = array_map('intval', explode('-',$_GET
 $tables_res = $conn->query("SELECT * FROM tables ORDER BY id");
 $tables_arr = $tables_res->fetch_all(MYSQLI_ASSOC);
 
-$bs = $conn->prepare("SELECT * FROM bookings WHERE booking_date=? ORDER BY booking_time ASC");
+$bs = $conn->prepare("SELECT * FROM bookings WHERE booking_date=? AND status != 'cancelled' ORDER BY booking_time ASC");
 $bs->bind_param("s",$date); $bs->execute();
 $bookings_arr = $bs->get_result()->fetch_all(MYSQLI_ASSOC);
 
@@ -190,6 +251,7 @@ $back=['admin'=>'../admin/dashboard.php','waiter'=>'../waiter/dashboard.php',
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Reservations</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -395,6 +457,120 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);height
 /* empty */
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px;color:var(--mut);gap:10px;}
 .empty-icon{font-size:44px;opacity:.2;}
+
+/* ═══════════════════════════════════════════
+   RESERVATIONS PAGE RESPONSIVE
+
+   IMPORTANT: body/layout must keep height:100vh + overflow:hidden
+   so the timeline's internal scroll works. Only the sidebar goes
+   off-canvas — the layout stays as a flex ROW.
+═══════════════════════════════════════════ */
+
+/* ── Sidebar toggle button (hidden on desktop) ── */
+.sidebar-toggle {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  right: 16px;
+  z-index: 400;
+  height: 42px;
+  padding: 0 16px;
+  border-radius: 21px;
+  background: var(--acc);
+  color: #fff;
+  border: none;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,200,150,.4);
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+/* ── 960px: narrow sidebar ── */
+@media (max-width: 960px) {
+  .sidebar { width: 220px; }
+  .topbar  { padding: 0 12px; gap: 12px; }
+  .topbar .sep { display: none; }
+}
+
+/* ── 768px: sidebar goes off-canvas, main takes full width.
+   Body/layout KEEP their fixed height so #vdiagram scroll works. ── */
+@media (max-width: 768px) {
+  /* Sidebar becomes off-canvas — pulled out of flex flow */
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 300;
+    width: 270px;
+    transform: translateX(-100%);
+    transition: transform .28s cubic-bezier(.2,.8,.3,1);
+    box-shadow: 4px 0 28px rgba(0,0,0,.5);
+    border-right: 1px solid var(--bd);
+    overflow-y: auto;
+  }
+  .sidebar.open { transform: translateX(0); }
+
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.6);
+    z-index: 299;
+    backdrop-filter: blur(2px);
+  }
+  .sidebar-overlay.open { display: block; }
+
+  /* Show toggle pill */
+  .sidebar-toggle { display: flex; }
+
+  /* Main fills the full width now that sidebar is fixed */
+  .main { width: 100%; }
+
+  /* Topbar: hide non-essentials */
+  .topbar { padding: 0 10px; gap: 8px; }
+  .sp, .rbadge, .tb-uname { display: none; }
+  .tb-nav:not(.active) { display: none; }  /* only show active nav link */
+
+  /* Date header: tighter, wrap filter tabs */
+  .dhdr { padding: 8px 12px; gap: 8px; flex-wrap: wrap; }
+  .dlabel { font-size: 14px; }
+  .dh-sp { display: none; }
+  .vtabs { order: 10; width: 100%; justify-content: center; }
+
+  /* Timeline: label column narrower, time slots smaller */
+  .tl-lbl { width: 100px; padding: 8px 8px; }
+  .tl-top  { margin-left: 100px; }
+  .tl-lbl .ln { font-size: 12px; }
+  .tl-lbl .lc { display: none; }
+
+  /* Walk-in form grid stacks */
+  .wi-row2 { grid-template-columns: 1fr; }
+
+  /* List view padding */
+  #vlist { padding: 12px; }
+
+  /* Filter tabs scrollable */
+  .ftabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .ftab  { white-space: nowrap; }
+}
+
+/* ── 480px: phones ── */
+@media (max-width: 480px) {
+  .topbar { gap: 6px; }
+  .dhdr { padding: 7px 10px; }
+  .dlabel { font-size: 13px; }
+  .dbtns a, .dbtns button { width: 24px; height: 24px; }
+  .btn { padding: 5px 10px; font-size: 11px; }
+  /* Even narrower label column */
+  .tl-lbl { width: 80px; }
+  .tl-top  { margin-left: 80px; }
+  .tl-lbl .ln { font-size: 11px; }
+}
 </style>
 </head>
 <body>
@@ -403,20 +579,25 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);height
 <div class="topbar">
   <span class="brand">&#9670; RestaurantMS</span>
   <div class="sep"></div>
-  <a href="<?php echo $back[$role]; ?>">Dashboard</a>
-  <a href="reservations.php" class="active">Reservations</a>
-  <?php if($is_admin): ?><a href="analytics.php">Analytics</a><?php endif; ?>
+  <a href="<?php echo $back[$role]; ?>" class="tb-nav">Dashboard</a>
+  <a href="reservations.php" class="active tb-nav">Reservations</a>
+  <?php if($is_admin): ?><a href="analytics.php" class="tb-nav">Analytics</a><?php endif; ?>
   <div class="sp"></div>
-  <span style="font-size:12px;color:var(--mut);"><?php echo htmlspecialchars($username); ?></span>
+  <span class="tb-uname" style="font-size:12px;color:var(--mut);"><?php echo htmlspecialchars($username); ?></span>
   <span class="rbadge <?php echo $role; ?>"><?php echo $role; ?></span>
-  <div class="sep"></div>
-  <a href="../auth/logout.php" style="color:#e07070;font-size:12px;">Logout</a>
+  <a href="../auth/logout.php" style="color:#e07070;font-size:12px;white-space:nowrap;">Logout</a>
 </div>
+
+<!-- Mobile sidebar overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+<button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="Bookings list">
+  <i class="fa-solid fa-calendar-days"></i>
+</button>
 
 <div class="layout">
 
 <!-- SIDEBAR -->
-<div class="sidebar">
+<div class="sidebar" id="mainSidebar">
   <?php echo miniCal($cal_y,$cal_m,$date); ?>
 
   <div class="search-wrap">
@@ -486,7 +667,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);height
       <button class="ftab"        onclick="filterTime('lunch',this)">Lunch</button>
       <button class="ftab"        onclick="filterTime('evening',this)">Evening</button>
     </div>
-    <?php if($is_admin):?>
+    <?php if($can_act):?>
     <div class="sep-v"></div>
     <button class="btn btn-warn" onclick="openWalkIn()">&#43; Walk-In</button>
     <a href="../reserve.php" class="btn btn-ol" target="_blank">&#43; New Booking</a>
@@ -571,12 +752,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);height
     <div class="empty"><div class="empty-icon">&#128197;</div><p>No bookings for <?php echo date('d F Y',strtotime($date));?></p></div>
   <?php else: ?>
   <table class="ltable">
-    <thead><tr><th>#</th><th>Guest</th><th>Time</th><th>Guests</th><th>Table</th><th>Status</th><?php if($is_admin):?><th>Update</th><?php endif;?></tr></thead>
+    <thead><tr><th>#</th><th>Guest</th><th>Time</th><th>Guests</th><th>Table</th><th>Status</th><?php if($can_act):?><th>Update</th><?php endif;?></tr></thead>
     <tbody>
     <?php foreach($bookings_arr as $i=>$b):
       $ft=date('H:i',strtotime($b['booking_time']));
     ?>
-    <tr style="cursor:pointer" onclick="openDetail(<?php echo $i;?>)">
+    <tr id="brow-<?php echo $b['id'];?>" style="cursor:pointer" onclick="openDetail(<?php echo $i;?>)">
       <td style="color:var(--gold);font-weight:600;">#<?php echo $b['id'];?></td>
       <td><div class="cn"><?php echo htmlspecialchars($b['customer_name']);?></div>
           <div class="cs"><?php echo htmlspecialchars($b['email']);?></div>
@@ -585,7 +766,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);height
       <td><?php echo $b['num_guests'];?></td>
       <td>Table <?php echo $b['assigned_table'];?></td>
       <td><span class="sb sb-<?php echo $b['status'];?>"><?php echo $b['status'];?></span></td>
-      <?php if($is_admin):?>
+      <?php if($can_act):?>
       <td onclick="event.stopPropagation()">
         <form method="POST" class="sf" style="display:flex;align-items:center;">
           <input type="hidden" name="booking_id" value="<?php echo $b['id'];?>">
@@ -597,6 +778,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);height
           </select>
           <button type="submit" name="update_status">Save</button>
         </form>
+        <?php if($is_admin):?>
+        <button class="btn btn-xs" style="background:var(--red-d);color:var(--red);border:1px solid rgba(239,68,68,.25);padding:4px 10px;font-size:11px;margin-left:4px;"
+                onclick="event.stopPropagation();deleteBooking(<?php echo $b['id']; ?>)" id="del-btn-<?php echo $b['id']; ?>">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+        <?php endif;?>
       </td>
       <?php endif;?>
     </tr>
@@ -623,9 +810,29 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);height
     <button class="mclose" onclick="closeOverlay('detail-overlay')">&#10005;</button>
   </div>
   <div class="mbody" id="m-body"></div>
-  <?php if($is_admin):?>
+  <?php if($can_act):?>
   <div class="mfoot">
     <input type="hidden" id="m-bid">
+    <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
+      <div style="flex:1;">
+        <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mut);display:block;margin-bottom:5px;">Guests</label>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button type="button" onclick="adjustModalGuests(-1)"
+                  style="width:30px;height:30px;border-radius:7px;border:1px solid var(--bd);background:var(--s2);color:var(--txt);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;"
+                  onmouseover="this.style.borderColor='rgba(255,255,255,.2)'" onmouseout="this.style.borderColor='var(--bd)'">−</button>
+          <input type="number" id="m-guests" min="1" max="100" value="1"
+                 style="width:60px;text-align:center;padding:6px 4px;background:var(--s2);border:1px solid var(--bd);border-radius:7px;color:var(--txt);font-family:inherit;font-size:14px;font-weight:700;outline:none;">
+          <button type="button" onclick="adjustModalGuests(1)"
+                  style="width:30px;height:30px;border-radius:7px;border:1px solid var(--bd);background:var(--s2);color:var(--txt);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;"
+                  onmouseover="this.style.borderColor='rgba(255,255,255,.2)'" onmouseout="this.style.borderColor='var(--bd)'">+</button>
+          <button type="button" onclick="submitGuestsUpdate()"
+                  style="padding:6px 12px;border-radius:8px;border:1px solid rgba(34,197,94,.3);background:rgba(34,197,94,.1);color:#22c55e;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap;transition:.15s;"
+                  onmouseover="this.style.background='rgba(34,197,94,.2)'" onmouseout="this.style.background='rgba(34,197,94,.1)'">
+            <i class="fa-solid fa-check"></i> Save
+          </button>
+        </div>
+      </div>
+    </div>
     <select id="m-sel" style="width:100%;background:var(--s2);border:1px solid var(--bd);color:var(--txt);padding:9px;border-radius:5px;font-size:13px;font-family:inherit;margin-bottom:10px;">
       <option value="confirmed">Confirmed</option>
       <option value="pending">Pending</option>
@@ -683,6 +890,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);height
 const bookings  = <?php echo json_encode(array_values($bookings_arr));?>;
 const tables    = <?php echo json_encode(array_values($tables_arr));?>;
 const isAdmin   = <?php echo $is_admin?'true':'false';?>;
+const canAct    = <?php echo $can_act?'true':'false';?>;
 const curDate   = '<?php echo $date;?>';
 const isToday   = <?php echo $is_today?'true':'false';?>;
 const T_START   = <?php echo T_S;?>;  // minutes
@@ -919,8 +1127,9 @@ function openDetail(idx) {
       <div class="mrow"><div class="mlbl">Table</div><div class="mval">Table ${b.assigned_table}</div></div>
       <div class="mrow"><div class="mlbl">Status</div><div class="mval"><span class="${sbCls}">${b.status}</span></div></div>
     `;
-    if (isAdmin) {
+    if (canAct) {
         document.getElementById('m-bid').value = b.id;
+        document.getElementById('m-guests').value = b.num_guests || 1;
         const sel = document.getElementById('m-sel');
         for (let o of sel.options) o.selected = o.value===b.status;
     }
@@ -979,6 +1188,63 @@ function submitStatusUpdate() {
 
         closeOverlay('detail-overlay');
         showToast(`Status updated to "${status}"`, 'success');
+    })
+    .catch(() => showToast('Network error', 'error'));
+}
+
+/* ─────────────────────────────────────────────────────────────
+   GUEST COUNT UPDATE
+───────────────────────────────────────────────────────────── */
+function adjustModalGuests(delta) {
+    const inp = document.getElementById('m-guests');
+    inp.value = Math.max(1, Math.min(100, (parseInt(inp.value) || 1) + delta));
+}
+
+function submitGuestsUpdate() {
+    const bid    = document.getElementById('m-bid').value;
+    const guests = parseInt(document.getElementById('m-guests').value) || 0;
+    if (!bid || guests < 1) return;
+
+    fetch('reservations.php?action=update_guests', {
+        method: 'POST',
+        headers: {'Content-Type':'application/x-www-form-urlencoded'},
+        body: `booking_id=${bid}&num_guests=${guests}`
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (!data.success) { showToast(data.error || 'Update failed', 'error'); return; }
+
+        /* update JS data array */
+        const bk = bookings.find(b => b.id == bid);
+        if (bk) bk.num_guests = guests;
+
+        /* update guest count shown in modal body */
+        const rows = document.querySelectorAll('#m-body .mrow');
+        rows.forEach(row => {
+            if (row.querySelector('.mlbl')?.textContent === 'Guests') {
+                row.querySelector('.mval').textContent = guests;
+            }
+        });
+
+        /* update sidebar guest count */
+        const siG = document.querySelector(`.bitem[data-id="${bid}"] .bi-g`);
+        if (siG) siG.textContent = guests + ' 👤';
+
+        /* update timeline block subtitle */
+        const bkSub = document.querySelector(`#bk-${bid} .bk-sub`);
+        if (bkSub) {
+            const spans = bkSub.querySelectorAll('span');
+            if (spans.length >= 3) spans[2].textContent = guests + ' 👤';
+        }
+
+        /* update list view guest cell */
+        const listRow = document.getElementById(`brow-${bid}`);
+        if (listRow) {
+            const cells = listRow.querySelectorAll('td');
+            if (cells[3]) cells[3].textContent = guests;
+        }
+
+        showToast(`Guest count updated to ${guests}`, 'success');
     })
     .catch(() => showToast('Network error', 'error'));
 }
@@ -1118,6 +1384,44 @@ let refreshTimer = setInterval(tick, 1000);
 ['mousedown','keydown','touchstart'].forEach(ev =>
     document.addEventListener(ev, ()=>{ refreshSecs=30; }, {passive:true})
 );
+
+/* ─────────────────────────────────────────────────────────────
+   DELETE BOOKING
+───────────────────────────────────────────────────────────── */
+function deleteBooking(bid) {
+    if (!confirm('Cancel this reservation? This cannot be undone.')) return;
+    fetch('reservations.php?action=delete_booking', {
+        method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'booking_id='+bid
+    }).then(r=>r.json()).then(d=>{
+        if (d.success) {
+            const row = document.getElementById('brow-'+bid);
+            if (row) { row.style.opacity='0'; row.style.transition='.3s'; setTimeout(()=>row.remove(),300); }
+            showToast('Reservation cancelled','success');
+        } else showToast(d.error||'Error','error');
+    });
+}
+
+/* ── Mobile sidebar toggle ── */
+function toggleSidebar() {
+    const sidebar  = document.getElementById('mainSidebar');
+    const overlay  = document.getElementById('sidebarOverlay');
+    const isOpen   = sidebar.classList.contains('open');
+    sidebar.classList.toggle('open', !isOpen);
+    overlay.classList.toggle('open', !isOpen);
+    document.getElementById('sidebarToggle').innerHTML =
+        isOpen ? '<i class="fa-solid fa-calendar-days"></i>'
+               : '<i class="fa-solid fa-xmark"></i>';
+}
+function closeSidebar() {
+    document.getElementById('mainSidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('open');
+    document.getElementById('sidebarToggle').innerHTML = '<i class="fa-solid fa-calendar-days"></i>';
+}
+/* Close sidebar when a booking item is tapped on mobile */
+document.querySelectorAll('.bitem').forEach(el => {
+    el.addEventListener('click', () => { if (window.innerWidth <= 768) closeSidebar(); });
+});
 </script>
 </body>
 </html>

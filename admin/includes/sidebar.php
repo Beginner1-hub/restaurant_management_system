@@ -25,10 +25,11 @@ function nav_item($href, $icon, $label, $current) {
 
   <div class="sidebar-section-label">Operations</div>
   <nav class="sidebar-nav">
-    <?php nav_item('analytics.php',     'fa-chart-line',      'Analytics',      $current_page); ?>
-    <?php nav_item('daily_sales.php',   'fa-receipt',         'Daily Sales',    $current_page); ?>
-    <?php nav_item('monthly_sales.php', 'fa-calendar-days',   'Monthly Sales',  $current_page); ?>
-    <?php nav_item('popular_items.php', 'fa-fire',            'Popular Items',  $current_page); ?>
+    <?php nav_item('analytics.php',       'fa-chart-line',    'Analytics',        $current_page); ?>
+    <?php nav_item('daily_sales.php',     'fa-receipt',       'Daily Sales',      $current_page); ?>
+    <?php nav_item('monthly_sales.php',   'fa-calendar-days', 'Monthly Sales',    $current_page); ?>
+    <?php nav_item('popular_items.php',   'fa-fire',          'Popular Items',    $current_page); ?>
+    <?php nav_item('waste_dashboard.php', 'fa-leaf',          'Waste Reduction',  $current_page); ?>
   </nav>
 
   <div class="sidebar-spacer"></div>
@@ -46,3 +47,49 @@ function nav_item($href, $icon, $label, $current) {
     </a>
   </div>
 </aside>
+
+<!-- Mobile sidebar overlay (tap to close) -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- Mobile hamburger — visible only on ≤768px via CSS -->
+<button class="mob-menu-btn" id="mobMenuBtn" aria-label="Open navigation">
+  <i class="fa-solid fa-bars"></i>
+</button>
+
+<script>
+(function () {
+  var sidebar = document.getElementById('sidebar');
+  var overlay = document.getElementById('sidebarOverlay');
+  var mobBtn  = document.getElementById('mobMenuBtn');
+
+  function isMobile() { return window.innerWidth <= 768; }
+
+  function openSidebar() {
+    sidebar.classList.add('mobile-open');
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden'; // prevent body scroll while drawer open
+  }
+  function closeSidebar() {
+    sidebar.classList.remove('mobile-open');
+    overlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  if (mobBtn)  mobBtn.addEventListener('click', function () { isMobile() && openSidebar(); });
+  if (overlay) overlay.addEventListener('click', closeSidebar);
+
+  // Close on nav-link tap (mobile navigates to new page, but feels instant)
+  sidebar.querySelectorAll('.nav-item').forEach(function (a) {
+    a.addEventListener('click', function () { if (isMobile()) closeSidebar(); });
+  });
+
+  // Wrap every .data-table in a .tbl-scroll div so it can scroll horizontally on mobile
+  document.querySelectorAll('.data-table').forEach(function (tbl) {
+    if (tbl.parentNode.classList.contains('tbl-scroll')) return; // already wrapped
+    var wrap = document.createElement('div');
+    wrap.className = 'tbl-scroll';
+    tbl.parentNode.insertBefore(wrap, tbl);
+    wrap.appendChild(tbl);
+  });
+})();
+</script>

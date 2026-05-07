@@ -24,6 +24,8 @@ $kpiQ = $conn->query("
 ");
 $kpi = $kpiQ->fetch_assoc();
 
+$net_revenue = (float)$kpi['revenue'];
+
 /* ── Daily sales for line chart ── */
 $dates = []; $sales = [];
 $r = $conn->query("
@@ -148,9 +150,15 @@ while ($row = $r->fetch_assoc()) { $statusLabels[] = $row['status']; $statusData
     <div class="kpi-grid" style="margin-bottom:24px;">
       <div class="kpi-card kpi-gold">
         <i class="fa-solid fa-sack-dollar kpi-icon"></i>
-        <div class="kpi-label">Total Revenue</div>
-        <div class="kpi-val">Rs.&nbsp;<?php echo number_format($kpi['revenue'],0); ?></div>
-        <div class="kpi-sub">Selected period</div>
+        <div class="kpi-label">Gross Revenue</div>
+        <div class="kpi-val">DKK&nbsp;<?php echo number_format($kpi['revenue'],0); ?></div>
+        <div class="kpi-sub">Before complementary deductions</div>
+      </div>
+      <div class="kpi-card kpi-green">
+        <i class="fa-solid fa-circle-check kpi-icon"></i>
+        <div class="kpi-label">Net Revenue</div>
+        <div class="kpi-val">DKK&nbsp;<?php echo number_format($net_revenue,0); ?></div>
+        <div class="kpi-sub">Total revenue this period</div>
       </div>
       <div class="kpi-card kpi-orange">
         <i class="fa-solid fa-receipt kpi-icon"></i>
@@ -161,7 +169,7 @@ while ($row = $r->fetch_assoc()) { $statusLabels[] = $row['status']; $statusData
       <div class="kpi-card kpi-blue">
         <i class="fa-solid fa-chart-bar kpi-icon"></i>
         <div class="kpi-label">Avg Order Value</div>
-        <div class="kpi-val">Rs.&nbsp;<?php echo number_format($kpi['avg_val'],0); ?></div>
+        <div class="kpi-val">DKK&nbsp;<?php echo number_format($kpi['avg_val'],0); ?></div>
         <div class="kpi-sub">Per completed bill</div>
       </div>
       <div class="kpi-card kpi-green">
@@ -222,7 +230,7 @@ const TICK = { color: 'rgba(255,255,255,.4)', font:{size:11} };
         pointBackgroundColor:'#c9a227', pointRadius:4, pointHoverRadius:6 }] },
     options:{ responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{display:false} },
-      scales:{ x:{grid:GRID,ticks:TICK}, y:{grid:GRID,ticks:{...TICK,callback:v=>'Rs.'+v}} } }
+      scales:{ x:{grid:GRID,ticks:TICK}, y:{grid:GRID,ticks:{...TICK,callback:v=>'DKK '+v}} } }
   });
 })();
 
@@ -271,7 +279,7 @@ const TICK = { color: 'rgba(255,255,255,.4)', font:{size:11} };
         borderWidth:1, borderRadius:4 }] },
     options:{ responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{display:false} },
-      scales:{ x:{grid:GRID,ticks:{...TICK,maxRotation:45}}, y:{grid:GRID,ticks:{...TICK,callback:v=>'Rs.'+v}} } }
+      scales:{ x:{grid:GRID,ticks:{...TICK,maxRotation:45}}, y:{grid:GRID,ticks:{...TICK,callback:v=>'DKK '+v}} } }
   });
 })();
 </script>

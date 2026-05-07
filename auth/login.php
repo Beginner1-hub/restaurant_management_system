@@ -16,7 +16,7 @@ if(isset($_POST['login'])){
 
     if($result->num_rows === 1){
         $user = $result->fetch_assoc();
-        if(password_verify($password, $user['password']) || md5($password) === $user['password']){
+        if(password_verify($password, $user['password'])){
             $_SESSION['user'] = $user;
             switch($user['role']){
                 case 'admin':   header("Location: ../admin/dashboard.php");   break;

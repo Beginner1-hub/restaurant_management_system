@@ -38,6 +38,9 @@ if (!$error && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_ca
     if ($upd->affected_rows > 0) {
         $success = true;
 
+        // Free the table if no active orders are using it
+        $conn->query("UPDATE `tables` SET status='available' WHERE id={$booking['assigned_table']} AND status='reserved' AND id NOT IN (SELECT table_id FROM orders WHERE status IN ('pending','preparing','ready'))");
+
         /* send cancellation confirmation email */
         $cust_name      = $booking['customer_name'];
         $cust_time      = date("H:i", strtotime($booking['booking_time']));
@@ -290,6 +293,13 @@ body {
   border-radius: 6px;
   padding: 14px 16px;
   font-size: 14px;
+}
+
+@media (max-width: 620px) {
+  .container { margin: 20px 12px; }
+  .banner    { padding: 22px 18px; }
+  .banner h2 { font-size: 22px; }
+  .body      { padding: 22px 18px; }
 }
 
 </style>
